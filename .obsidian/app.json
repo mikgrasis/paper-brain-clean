@@ -1,0 +1,17 @@
+{
+  "legacyEditor": false,
+  "livePreview": true,
+  "useMarkdownLinks": false,
+  "newLinkFormat": "shortest",
+  "attachmentFolderPath": "_attachments",
+  "newFileLocation": "folder",
+  "newFileFolderPath": "references",
+  "alwaysUpdateLinks": true,
+  "promptDelete": false,
+  "showFrontmatter": true,
+  "spellcheck": true,
+  "userIgnoreFilters": [
+    "_templates/",
+    "_attachments/"
+  ]
+}

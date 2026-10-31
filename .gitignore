@@ -1,0 +1,21 @@
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.trash/
+.DS_Store
+Thumbs.db
+
+# Community plugin code — reinstalled from community-plugins.json on clone
+.obsidian/plugins/
+
+# JetBrains IDE
+.idea/
+
+# Per-session view state (zoom/pan/search); colors restored via _scripts/restore-graph-colors.ps1
+.obsidian/graph.json
+
+# DOI/arXiv lookup cache
+.cache/
+
+# Python bytecode
+__pycache__/

@@ -1,0 +1,10 @@
+{
+  "collapse-color-groups": false,
+  "colorGroups": [
+    { "query": "path:references", "color": { "a": 1, "rgb": 8116367 } },
+    { "query": "path:collections", "color": { "a": 1, "rgb": 4054271 } },
+    { "query": "path:molecules", "color": { "a": 1, "rgb": 16735400 } },
+    { "query": "path:topics", "color": { "a": 1, "rgb": 16765286 } },
+    { "query": "path:people", "color": { "a": 1, "rgb": 11141375 } }
+  ]
+}
