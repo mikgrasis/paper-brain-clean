@@ -10,7 +10,7 @@ Plugins: Dataview and Templater. Scripts: Python 3 with PyYAML.
 2. Replace `library.bib` with your own export (Zotero, JabRef, Mendeley and Google Scholar all work).
 3. Create notes for the papers you care about: `python3 _scripts/build_reference_notes.py --add <bibkey> …` (or `--all`).
 4. Tag them from `_vocab/tags.md`; `python3 _scripts/tag_report.py` proposes hubs once tags fill up.
-5. In each citing vault, build References against this library: `python3 _scripts/build_references.py --bib <path to this vault>/library.bib`. List those vaults in `_scripts/settings.json`, then run `python3 _scripts/cited_in.py` here.
+5. In each citing vault, build References against this library: `python3 _scripts/build_references.py --library <path to this vault>` (each entry then links to the paper's note here). List those vaults in `_scripts/settings.json`, then run `python3 _scripts/cited_in.py` here.
 
 The example — [[kolda2009tensor]] in the hub [[Tensors]] — shows the shape. Delete it once you've started.
 

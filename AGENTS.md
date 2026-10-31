@@ -49,7 +49,7 @@ A hand-curated set with its own identity (`kind`: lab, lineage, series, reading-
 
 ## Cited in
 
-`cited_in.py` adds a collapsed "Cited in" list after each note's bib block, from every vault in `citing_vaults` (`_scripts/settings.json`). Citing vaults write `[@key]` and build their References with `--bib` pointing at this vault's `library.bib`.
+`cited_in.py` adds a collapsed "Cited in" list after each note's bib block, from every vault in `citing_vaults` (`_scripts/settings.json`). Citing vaults write `[@key]` and build their References with `build_references.py --library <path to this vault>`.
 
 ## Scripts
 
