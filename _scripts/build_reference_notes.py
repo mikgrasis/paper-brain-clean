@@ -61,7 +61,7 @@ KIND_LABEL = {"article": "Journal article", "inproceedings": "Conference paper",
 
 def clean(s):
     s = decode(s)
-    s = re.sub(r"\\&", "&", s)
+    s = re.sub(r"\\([&%_#])", r"\1", s)            # LaTeX-escaped & % _ #
     s = s.replace("---", "—").replace("--", "–")
     s = re.sub(r"(?<!\\)[{}]", "", s)
     return re.sub(r"\s+", " ", s).strip()
