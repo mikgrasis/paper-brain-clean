@@ -19,3 +19,7 @@ Thumbs.db
 
 # Python bytecode
 __pycache__/
+
+# Per-machine PDF root: this machine's file:// URL and its pdf_root override
+_fixups/library-root.md
+_scripts/settings.local.json

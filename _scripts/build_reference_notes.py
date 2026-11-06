@@ -5,14 +5,22 @@
     python3 _scripts/build_reference_notes.py --add KEY …  # also create notes for these entries
     python3 _scripts/build_reference_notes.py --all        # a note for every entry
     python3 _scripts/build_reference_notes.py --check      # change nothing; exit 1 if a note would change
+    python3 _scripts/build_reference_notes.py --root       # only write this machine's _fixups/library-root.md
 
 Rewritten on every run: the generated frontmatter keys (title … pdf), `topics` (the most specific hubs whose
 `covers:` match the note's tags), and the text between %% bib:start %% and %% bib:end %% (a citation callout
 with PDF / doi / arXiv links and a collapsible abstract). Everything else — tags, tier, your notes — is kept.
 New notes start as tier `stub`; set `full` by hand once a note has substantive notes.
 
-`pdf` comes from the entry's `file` field (Mendeley, JabRef and Zotero forms); a relative path resolves
-against `pdf_root` in _scripts/settings.json. Without a `file` field, a `pdf:` set by hand is kept.
+`pdf` comes from the entry's `file` field (Mendeley, JabRef and Zotero forms). It is stored relative to `pdf_root`
+(a relative `file` path already is; an absolute one under `pdf_root` is made relative), so the note reads the same
+on every machine. `pdf_root` is set in _scripts/settings.json and, per machine, in the gitignored
+_scripts/settings.local.json (a drive letter, a mount point, a network share). A PDF outside `pdf_root` keeps its
+absolute file:// URL. Without a `file` field, a `pdf:` set by hand is kept.
+
+Every run also writes _fixups/library-root.md (gitignored): this machine's file:// URL of `pdf_root`. The notes'
+PDF links and the topic hubs read it (inline Dataview), so they open the PDF in the default application.
+`--root` writes only that note.
 """
 import json
 import re
@@ -28,7 +36,20 @@ from latex import decode
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "references"
-SETTINGS = json.loads((ROOT / "_scripts" / "settings.json").read_text(encoding="utf-8"))
+
+
+def load_settings():
+    """settings.json, then the gitignored settings.local.json on top (per-machine paths)."""
+    out = {}
+    for name in ("settings.json", "settings.local.json"):
+        f = ROOT / "_scripts" / name
+        if f.exists():
+            out.update(json.loads(f.read_text(encoding="utf-8")))
+    return out
+
+
+SETTINGS = load_settings()
+PDF_ROOT = Path(SETTINGS["pdf_root"]).expanduser() if SETTINGS.get("pdf_root") else None
 GENERATED = ["title", "authors", "year", "kind", "venue", "doi", "arxiv", "pdf"]
 START, END = "%% bib:start: generated from library.bib, edit the bib %%", "%% bib:end %%"
 BLOCK = re.compile(r"%% bib:start[^%]*%%.*?%% bib:end %%", re.S)
@@ -46,8 +67,26 @@ def clean(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
-def pdf_url(e):
-    """file:// URL of the entry's first PDF, or "" if it has none."""
+def root_url():
+    """file:// URL of pdf_root with a trailing slash (works for drive letters and UNC shares), or ""."""
+    return PDF_ROOT.as_uri().rstrip("/") + "/" if PDF_ROOT and PDF_ROOT.is_absolute() else ""
+
+
+def write_library_root():
+    """_fixups/library-root.md: this machine's file:// URL of pdf_root, read by the PDF links."""
+    url = root_url()
+    out = ROOT / "_fixups" / "library-root.md"
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(
+        f'---\nurl: "{url}"\n---\n\n'
+        "Machine-specific, gitignored. Written by `_scripts/build_reference_notes.py` from `pdf_root` in "
+        "`_scripts/settings.json` / `settings.local.json`; read by the notes' PDF links and the topic hubs.\n",
+        encoding="utf-8", newline="\n")
+    return url
+
+
+def pdf_path(e):
+    """The entry's first PDF: relative to pdf_root when it lies under it, else an absolute file:// URL; "" if none."""
     for part in e.get("file").split(";"):
         m = re.match(r"^(?:[^:]*:)?(.+?\.pdf)(?::[^:]*)?$", part.strip(), re.I)
         if not m:
@@ -55,9 +94,24 @@ def pdf_url(e):
         p = m.group(1).replace("\\:", ":")
         if p.startswith(("Users/", "Volumes/", "home/")):
             p = "/" + p                                   # Mendeley drops the leading slash
-        path = Path(p) if p.startswith("/") or not SETTINGS["pdf_root"] else Path(SETTINGS["pdf_root"]) / p
-        return "file://" + quote(str(path))
+        path = Path(p)
+        if not path.is_absolute():
+            return path.as_posix()                        # recorded relative to pdf_root
+        if PDF_ROOT:
+            try:
+                return path.relative_to(PDF_ROOT).as_posix()
+            except ValueError:
+                pass
+        return path.as_uri()                              # outside pdf_root: machine-specific, kept as before
     return ""
+
+
+def pdf_link():
+    """Inline Dataview link from the note's own `pdf` field: a relative path resolves against this machine's
+    pdf_root (_fixups/library-root.md), a file:// URL is used as it is."""
+    enc = 'replace(replace(replace(replace(this.pdf, " ", "%20"), "[", "%5B"), "]", "%5D"), ",", "%2C")'
+    return ('`= elink(choice(startswith(this.pdf, "file:"), this.pdf, '
+            f'[[_fixups/library-root]].url + {enc}), "PDF")`')
 
 
 def meta(e, old_pdf):
@@ -74,7 +128,7 @@ def meta(e, old_pdf):
         "venue": clean(venue),
         "doi": e.get("doi").strip(),
         "arxiv": arxiv.strip(),
-        "pdf": pdf_url(e) or old_pdf or "",
+        "pdf": pdf_path(e) or old_pdf or "",
     }
 
 
@@ -83,7 +137,7 @@ def body(m, e):
     who = "; ".join(authors) if len(authors) <= 8 else "; ".join(authors[:6]) + f"; … ({len(authors)} authors)"
     kind = KIND_LABEL.get(m["kind"], m["kind"])
     where = ", ".join(str(x) for x in (m["venue"], m["year"]) if x)
-    links = [f"[PDF]({m['pdf']})"] if m["pdf"] else []
+    links = [pdf_link()] if m["pdf"] else []
     links += [f"[doi](https://doi.org/{m['doi']})"] if m["doi"] else []
     links += [f"[arXiv](https://arxiv.org/abs/{m['arxiv']})"] if m["arxiv"] else []
     lines = [START, f"> [!cite] {who}", f"> {where} · {kind}" if where else f"> {kind}"]
@@ -138,6 +192,9 @@ def frontmatter(fm):
 
 
 def main():
+    if "--root" in sys.argv:
+        print(write_library_root() or "pdf_root not set or not absolute: url left empty")
+        return
     check = "--check" in sys.argv
     add = set(sys.argv[sys.argv.index("--add") + 1:]) if "--add" in sys.argv else set()
     _, entries = bib.read(ROOT / "library.bib")
@@ -179,6 +236,8 @@ def main():
         if not check:
             path.write_text(new, encoding="utf-8", newline="\n")
     print(counts)
+    if not check:
+        write_library_root()
     sys.exit(1 if check and (counts["created"] or counts["updated"]) else 0)
 
 
