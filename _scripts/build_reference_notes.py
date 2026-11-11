@@ -61,7 +61,7 @@ KIND_LABEL = {"article": "Journal article", "inproceedings": "Conference paper",
 
 def clean(s):
     s = decode(s)
-    s = re.sub(r"\\&", "&", s)
+    s = re.sub(r"\\([&%_#])", r"\1", s)            # LaTeX-escaped & % _ #
     s = s.replace("---", "—").replace("--", "–")
     s = re.sub(r"(?<!\\)[{}]", "", s)
     return re.sub(r"\s+", " ", s).strip()
@@ -185,7 +185,7 @@ def frontmatter(fm):
         if k == "topics":
             out.append("# generated from tags and the hubs' covers: edit tags, not topics")
         v = fm[k]
-        out.append(f"{k}: {json.dumps(v, ensure_ascii=False) if v is not None else ''}")
+        out.append(f"{k}: {json.dumps(v, ensure_ascii=False, default=lambda o: o.isoformat()) if v is not None else ''}")   # Obsidian rewrites quoted dates as YAML dates
         if k == "pdf":
             out.append("# end generated")
     return "\n".join(out + ["---"])
