@@ -8,6 +8,7 @@ Plugins: Dataview and Templater. Scripts: Python 3 with PyYAML.
 
 1. Open this folder in [Obsidian](https://obsidian.md) as a vault and enable the community plugins.
 2. Replace `library.bib` with your own export (Zotero, JabRef, Mendeley and Google Scholar all work).
+   PDFs stay outside git: on each machine put the folder that holds them in `_scripts/settings.local.json` (`{"pdf_root": "/path/to/library"}`, a drive letter or a network share works) and run `python3 _scripts/build_reference_notes.py --root`. The notes' PDF links then open in the default application on every machine.
 3. Create notes for the papers you care about: `python3 _scripts/build_reference_notes.py --add <bibkey> …` (or `--all`).
 4. Tag them from `_vocab/tags.md`; `python3 _scripts/tag_report.py` proposes hubs once tags fill up.
 5. In each citing vault, build References against this library: `python3 _scripts/build_references.py --library <path to this vault>` (each entry then links to the paper's note here). List those vaults in `_scripts/settings.json`, then run `python3 _scripts/cited_in.py` here.

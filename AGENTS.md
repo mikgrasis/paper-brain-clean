@@ -8,7 +8,7 @@ If `AGENTS.local.md` exists, read it next; it wins where the two differ.
 
 - **`library.bib` is the master bibliography.** UTF-8, nothing ever dropped. Reference notes are generated from it; fix an entry in the bib, never in its note.
 - **Bibkeys are the paper ID across all vaults.** Existing keys never change. New keys: first author's surname + year + first non-stopword of the title, lowercase (`kolda2009tensor`), with an `a`/`b` suffix on collision — the same rule Google Scholar uses.
-- **PDFs never go into git.** The bib's `file` field points at them; a relative path resolves against `pdf_root` in `_scripts/settings.json`.
+- **PDFs never go into git.** The bib's `file` field points at them. A reference note stores `pdf:` relative to `pdf_root` (`papers/Smith - 2020 - Title.pdf`), so it is the same on every machine. Each machine sets its own `pdf_root` in `_scripts/settings.local.json` (gitignored; a path, a drive letter or a network share), and the build writes that machine's `_fixups/library-root.md`, which the PDF links read. After a clone or a changed `pdf_root`, run `python3 _scripts/build_reference_notes.py --root`.
 - **Boundary:** if you would cite it in a paper, it goes in `library.bib` and gets a note here. Media you only learn from goes in a citing vault's `sources/`.
 
 ## Note types
@@ -21,7 +21,7 @@ people/       only people who matter: co-authors, supervisors, authors you follo
 molecules/    your own cross-reference insights
 ```
 
-Support folders: `_vocab/` (the tag vocabulary), `_reports/` (generated reports), `csl/` (citation styles), `_scripts/`, `_templates/`.
+Support folders: `_fixups/` (this machine's PDF root, gitignored), `_vocab/` (the tag vocabulary), `_reports/` (generated reports), `csl/` (citation styles), `_scripts/`, `_templates/`.
 
 ## References
 
