@@ -12,11 +12,12 @@ Rewritten on every run: the generated frontmatter keys (title … pdf), `topics`
 with PDF / doi / arXiv links and a collapsible abstract). Everything else — tags, tier, your notes — is kept.
 New notes start as tier `stub`; set `full` by hand once a note has substantive notes.
 
-`pdf` comes from the entry's `file` field (Mendeley, JabRef and Zotero forms). It is stored relative to `pdf_root`
-(a relative `file` path already is; an absolute one under `pdf_root` is made relative), so the note reads the same
-on every machine. `pdf_root` is set in _scripts/settings.json and, per machine, in the gitignored
-_scripts/settings.local.json (a drive letter, a mount point, a network share). A PDF outside `pdf_root` keeps its
-absolute file:// URL. Without a `file` field, a `pdf:` set by hand is kept.
+`pdf` comes from the entry's `file` field (Mendeley, JabRef and Zotero forms, and bare Windows paths with a
+drive letter). It is stored relative to `pdf_root` (a relative `file` path already is; an absolute one under
+`pdf_root` is made relative), so the note reads the same on every machine. `pdf_root` is set in
+_scripts/settings.json and, per machine, in the gitignored _scripts/settings.local.json (a drive letter, a mount
+point, a network share). A PDF outside `pdf_root` keeps its absolute file:// URL. Without a `file` field, a
+`pdf:` set by hand is kept.
 
 Every run also writes _fixups/library-root.md (gitignored): this machine's file:// URL of `pdf_root`. The notes'
 PDF links and the topic hubs read it (inline Dataview), so they open the PDF in the default application.
@@ -88,10 +89,14 @@ def write_library_root():
 def pdf_path(e):
     """The entry's first PDF: relative to pdf_root when it lies under it, else an absolute file:// URL; "" if none."""
     for part in e.get("file").split(";"):
-        m = re.match(r"^(?:[^:]*:)?(.+?\.pdf)(?::[^:]*)?$", part.strip(), re.I)
+        part = part.strip()
+        if re.match(r"^[A-Za-z]:[\\/]", part):           # a bare Windows path (Zotero, Better BibTeX): C:\...\x.pdf
+            m = re.match(r"^(.+?\.pdf)(?::[^:]*)?$", part, re.I)
+        else:                                             # name:path:type (Mendeley, JabRef, Zotero) or a bare path
+            m = re.match(r"^(?:[^:]*:)?(.+?\.pdf)(?::[^:]*)?$", part, re.I)
         if not m:
             continue
-        p = m.group(1).replace("\\:", ":")
+        p = m.group(1).replace("\\:", ":").replace("\\\\", "\\")   # unescape C\: and doubled backslashes
         if p.startswith(("Users/", "Volumes/", "home/")):
             p = "/" + p                                   # Mendeley drops the leading slash
         path = Path(p)
