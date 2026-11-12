@@ -16,8 +16,9 @@ New notes start as tier `stub`; set `full` by hand once a note has substantive n
 drive letter). It is stored relative to `pdf_root` (a relative `file` path already is; an absolute one under
 `pdf_root` is made relative), so the note reads the same on every machine. `pdf_root` is set in
 _scripts/settings.json and, per machine, in the gitignored _scripts/settings.local.json (a drive letter, a mount
-point, a network share). A PDF outside `pdf_root` keeps its absolute file:// URL. Without a `file` field, a
-`pdf:` set by hand is kept.
+point, a network share). A relative `pdf_root` resolves against the vault (`library` for a gitignored folder
+inside it), so a clone needs no local setting. A PDF outside `pdf_root` keeps its absolute file:// URL. Without
+a `file` field, a `pdf:` set by hand is kept.
 
 Every run also writes _fixups/library-root.md (gitignored): this machine's file:// URL of `pdf_root`. The notes'
 PDF links and the topic hubs read it (inline Dataview), so they open the PDF in the default application.
@@ -50,7 +51,8 @@ def load_settings():
 
 
 SETTINGS = load_settings()
-PDF_ROOT = Path(SETTINGS["pdf_root"]).expanduser() if SETTINGS.get("pdf_root") else None
+_root = Path(SETTINGS["pdf_root"]).expanduser() if SETTINGS.get("pdf_root") else None
+PDF_ROOT = (_root if _root.is_absolute() else ROOT / _root).resolve() if _root else None   # relative: to the vault
 GENERATED = ["title", "authors", "year", "kind", "venue", "doi", "arxiv", "pdf"]
 START, END = "%% bib:start: generated from library.bib, edit the bib %%", "%% bib:end %%"
 BLOCK = re.compile(r"%% bib:start[^%]*%%.*?%% bib:end %%", re.S)
@@ -70,7 +72,7 @@ def clean(s):
 
 def root_url():
     """file:// URL of pdf_root with a trailing slash (works for drive letters and UNC shares), or ""."""
-    return PDF_ROOT.as_uri().rstrip("/") + "/" if PDF_ROOT and PDF_ROOT.is_absolute() else ""
+    return PDF_ROOT.as_uri().rstrip("/") + "/" if PDF_ROOT else ""
 
 
 def write_library_root():
@@ -104,7 +106,7 @@ def pdf_path(e):
             return path.as_posix()                        # recorded relative to pdf_root
         if PDF_ROOT:
             try:
-                return path.relative_to(PDF_ROOT).as_posix()
+                return path.resolve().relative_to(PDF_ROOT).as_posix()
             except ValueError:
                 pass
         return path.as_uri()                              # outside pdf_root: machine-specific, kept as before
@@ -198,7 +200,7 @@ def frontmatter(fm):
 
 def main():
     if "--root" in sys.argv:
-        print(write_library_root() or "pdf_root not set or not absolute: url left empty")
+        print(write_library_root() or "pdf_root not set: url left empty")
         return
     check = "--check" in sys.argv
     add = set(sys.argv[sys.argv.index("--add") + 1:]) if "--add" in sys.argv else set()
